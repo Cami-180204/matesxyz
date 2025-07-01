@@ -28,6 +28,14 @@
   #draw {
     background:#75c6f7;
   }
+  #zin, #zout {
+    background: #D7a1f9;
+    color: #000;
+  }
+  [data-d] {
+    background: #ff5783;
+    color: #000;
+  }
   #result {
     margin-top:10px;
     font-family:'Cambria Math', serif;
@@ -36,14 +44,6 @@
     padding:6px 10px;
     border-radius:6px;
     min-width:240px;
-  }
-  .zoom-btn {
-    background:#D7a1f9;
-    color:#000;
-  }
-  .arrow-btn {
-    background:#ff5783;
-    color:#000;
   }
 </style>
 </head>
@@ -65,16 +65,16 @@
   </div>
 
   <!-- Controles -->
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center">
     <button id="draw" class="btn">Graficar región</button>
-    <button id="zin" class="btn zoom-btn">+</button>
-    <button id="zout" class="btn zoom-btn">−</button>
-    <div style="display:flex;gap:6px">
-      <button class="btn mv arrow-btn" data-d="left">◀</button>
-      <button class="btn mv arrow-btn" data-d="right">▶</button>
-      <button class="btn mv arrow-btn" data-d="up">▲</button>
-      <button class="btn mv arrow-btn" data-d="down">▼</button>
-      <button class="btn mv arrow-btn" data-d="re">⌖</button>
+    <button id="zin" class="btn">+</button>
+    <button id="zout" class="btn">−</button>
+    <div style="display:flex;gap:4px">
+      <button class="btn mv" data-d="left">◀</button>
+      <button class="btn mv" data-d="up">▲</button>
+      <button class="btn mv" data-d="re">⌖</button>
+      <button class="btn mv" data-d="down">▼</button>
+      <button class="btn mv" data-d="right">▶</button>
     </div>
   </div>
 
@@ -85,7 +85,8 @@
   <div id="result">Introduce Z y haz clic en “Graficar región”.</div>
 
 <script>
-// ... El código JavaScript permanece igual
+// (código JS sin cambios)
 </script>
 </body>
 </html>
+
