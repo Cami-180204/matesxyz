@@ -2,61 +2,30 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>Graficador de Desigualdades</title>
+<title>Graficador de Desigualdes</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.1/math.min.js"></script>
 <style>
-  canvas { background:#fff; border:1px solid #000; border-radius:8px }
-  .btn {
-    background:#4b5563;
-    color:#000;
-    font-weight:600;
-    border-radius:6px;
-    padding:6px 12px;
-    cursor:pointer;
-    font-family: 'Cambria Math', serif;
-  }
-  .mv {
-    width:34px;
-    height:34px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-  #add {
-    background:#A2E4B8;
-  }
-  #draw {
-    background:#75c6f7;
-  }
-  #zin, #zout {
-    background: #D7a1f9;
-    color: #000;
-  }
-  [data-d] {
-    background: #ff5783;
-    color: #000;
-  }
-  #result {
-    margin-top:10px;
-    font-family:'Cambria Math', serif;
-    font-size:16px;
-    background:#e5e7eb;
-    padding:6px 10px;
-    border-radius:6px;
-    min-width:240px;
-  }
+  body{background:#f5f0db;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  canvas{background:#fff;border:1px solid #000;border-radius:8px}
+  .btn{background:#4b5563;color:#000;font-weight:600;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'Cambria Math',serif}
+  .mv{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  #add{background:#A2E4B8}
+  #draw{background:#75c6f7}
+  #zin,#zout{background:#D7a1f9;color:#000}
+  [data-d]{background:#ff5783;color:#000}
+  #result{margin-top:10px;font-family:'Cambria Math',serif;font-size:16px;background:#e5e7eb;padding:6px 10px;border-radius:6px;min-width:260px;text-align:center}
 </style>
 </head>
-<body style="background:#f5f0db;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px">
-  <h1 style="font-size:20px;font-weight:bold">Graficador de Desigualdades</h1>
+<body>
+  <h1 style="font-size:20px;font-weight:bold;font-family:'Cambria Math',serif">Graficador de Desigualdes</h1>
 
   <!-- Desigualdades -->
   <div id="inputWrap" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:600px"></div>
   <button id="add" class="btn">+ añadir desigualdad</button>
 
   <!-- Función objetivo -->
-  <div style="display:flex;gap:8px;align-items:center">
-    <label style="font-family:'Cambria Math', serif"> Z = </label>
+  <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+    <label style="font-family:'Cambria Math',serif">Z =</label>
     <input id="obj" style="padding:6px;border:1px solid #ccc;border-radius:4px;width:220px" placeholder="3*x+2*y">
     <select id="sense" style="padding:6px;border:1px solid #ccc;border-radius:4px">
       <option value="max">Maximizar</option>
@@ -65,7 +34,7 @@
   </div>
 
   <!-- Controles -->
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center">
+  <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;justify-content:center">
     <button id="draw" class="btn">Graficar región</button>
     <button id="zin" class="btn">+</button>
     <button id="zout" class="btn">−</button>
@@ -79,14 +48,92 @@
   </div>
 
   <!-- Canvas -->
-  <canvas id="cv" width="1000" height="700"></canvas>
+  <canvas id="cv" width="1000" height="700" style="margin-top:10px"></canvas>
 
   <!-- Resultado óptimo -->
   <div id="result">Introduce Z y haz clic en “Graficar región”.</div>
 
 <script>
-// (código JS sin cambios)
-</script>
-</body>
-</html>
+// ---------- Entrada desigualdades ----------
+const tpl=()=>`<input class="ineq" style="padding:6px;border-radius:4px;border:1px solid #ccc" placeholder="4*x+2*y<=100">`;
+const wrap=document.getElementById('inputWrap');
+for(let i=0;i<4;i++)wrap.insertAdjacentHTML('beforeend',tpl());
+document.getElementById('add').onclick=()=>wrap.insertAdjacentHTML('beforeend',tpl());
 
+// ---------- Canvas y utilidades ----------
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let scale=40,off={x:cv.width/2,y:cv.height/2};
+const baseColors=["#EF4444","#10B981","#8B5CF6","#3B82F6"];
+let colorQueue=[...baseColors];
+const tp=(x,y)=>({x:off.x+x*scale,y:off.y-y*scale});
+const tc=(px,py)=>({x:(px-off.x)/scale,y:(off.y-py)/scale});
+
+function parseIneq(str){
+  str=str.replace(/\s+/g,'');
+  const op=["<=",">=","<",">","="] .find(o=>str.includes(o));
+  if(!op)throw"Falta operador";
+  const [L,R]=str.split(op);
+  const expr=`(${math.parse(L)})-(${math.parse(R)})`;
+  const f=Function('x','y',`return ${expr}`);
+  const c=f(0,0),a=f(1,0)-c,b=f(0,1)-c;
+  const test=(x,y)=>{const v=f(x,y);switch(op){case"<=":return v<=1e-9;case"<":return v<0;case">=":return v>=-1e-9;case">":return v>0;default:return Math.abs(v)<1e-9;}};
+  return{raw:str,a,b,c,color:colorQueue.shift()||"#000",test};
+}
+
+// ---------- Dibujar cuadrícula ----------
+function drawGrid(){ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.lineWidth=1;ctx.strokeStyle="#e5e7eb";
+  for(let x=off.x%scale;x<cv.width;x+=scale){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cv.height);ctx.stroke();}
+  for(let y=off.y%scale;y<cv.height;y+=scale){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cv.width,y);ctx.stroke();}
+  ctx.strokeStyle="#000";
+  ctx.beginPath();ctx.moveTo(0,off.y);ctx.lineTo(cv.width,off.y);
+  ctx.moveTo(off.x,0);ctx.lineTo(off.x,cv.height);ctx.stroke();
+  ctx.font="10px 'Courier New'";ctx.fillStyle="#000";
+  const stepLbl=Math.max(1,Math.ceil(50/scale));
+  for(let i=-cv.width/scale;i<cv.width/scale;i++){
+    if(i%stepLbl)continue;const p=tp(i,0);
+    if(p.x>0&&p.x<cv.width)ctx.fillText(i,p.x+2,off.y+12);
+  }
+  for(let j=-cv.height/scale;j<cv.height/scale;j++){
+    if(j%stepLbl)continue;const p=tp(0,j);
+    if(p.y>0&&p.y<cv.height)ctx.fillText(j,p.x+4,p.y-4);
+  }
+}
+
+// ---------- Sombrear región ----------
+function shadeRegion(arr){const img=ctx.getImageData(0,0,cv.width,cv.height);
+  const d=img.data,step=6;
+  for(let px=0;px<cv.width;px+=step){for(let py=0;py<cv.height;py+=step){const {x,y}=tc(px,py);
+      if(arr.every(o=>o.test(x,y))){for(let dx=0;dx<step;dx++)for(let dy=0;dy<step;dy++){
+          const id=((py+dy)*cv.width+px+dx)*4;d[id]=255;d[id+1]=255;d[id+2]=200;d[id+3]=70;}}
+  }}ctx.putImageData(img,0,0);}   
+
+// ---------- Fronteras ----------
+function drawBorders(arr){arr.forEach(o=>{ctx.strokeStyle=o.color;ctx.lineWidth=2;ctx.beginPath();let first=true;
+    for(let px=0;px<cv.width;px++){
+      const x=tc(px,0).x;const y=(-o.a*x-o.c)/o.b;if(!isFinite(y))continue;const py=tp(0,y).y;
+      if(py<0||py>cv.height)continue;
+      if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);
+    }
+    ctx.stroke();ctx.fillStyle=o.color;ctx.font='12px Arial';ctx.fillText(o.raw,10+Math.random()*30,20+Math.random()*10);
+  });}
+
+// ---------- Vértices ----------
+function vertices(arr){const pts=[];
+  for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+      const d=arr[i].a*arr[j].b-arr[j].a*arr[i].b;if(Math.abs(d)<1e-9)continue;
+      const x=(arr[i].b*arr[j].c-arr[j].b*arr[i].c)/d;
+      const y=(arr[i].c*arr[j].a-arr[j].c*arr[i].a)/d;
+      if(arr.every(o=>o.test(x,y)))pts.push({x:+x.toFixed(2),y:+y.toFixed(2)});
+  }
+  return pts;
+}
+function drawVertices(pts){pts.forEach(p=>{const pix=tp(p.x,p.y);ctx.beginPath();ctx.arc(pix.x,pix.y,5,0,Math.PI*2);
+    ctx.fillStyle="#ff7e79";ctx.fill();ctx.strokeStyle="#000";ctx.stroke();ctx.font='12px Arial';ctx.fillStyle='#000';ctx.fillText(`(${p.x},${p.y})`,pix.x+6,pix.y-6);
+  });}
+
+// ---------- Objetivo ----------
+function evalObjective(pts){const expr=document.getElementById('obj').value.trim();if(!expr)return null;let f;try{f=Function('x','y',`return ${expr}`);}catch{return null;}
+  const sense=document.getElementById('sense').value;let best=pts[0];let bestVal=f(best.x,best.y);
+  pts.forEach(p=>{const v
